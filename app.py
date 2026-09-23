@@ -16,8 +16,8 @@ st.write("Upload a leaf image to detect potential plant diseases in real-time.")
 
 device = torch.device("cpu")
 
-WEIGHTS_FILE = "plant_disease_model.pth"
-WEIGHTS_URL = "sha256:b67d46c11e0cd969339539e618af25821825ee2f5c5f929bf667deb3dc1fe698"
+WEIGHTS_FILE = "plant_disease_model.1.pth"
+WEIGHTS_URL = "https://github.com/snehasajjan421-ops/Plant-Disease-Classification/releases/download/v1.0/plant_disease_model.1.pth"
 
 
 # Robust downloader using requests to follow GitHub Release redirects
