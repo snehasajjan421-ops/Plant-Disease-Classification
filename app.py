@@ -1,7 +1,7 @@
 import json
 import os
-import urllib.request
 from PIL import Image
+import requests
 import streamlit as st
 import torch
 import torch.nn as nn
@@ -19,10 +19,21 @@ device = torch.device("cpu")
 WEIGHTS_FILE = "plant_disease_model.pth"
 WEIGHTS_URL = "https://github.com/snehasajjan421-ops/Plant-Disease-Classification/releases/download/v1.0/plant_disease_model.pth"
 
-# Auto-download the 45MB model weights if not already present
-if not os.path.exists(WEIGHTS_FILE):
+
+# Robust downloader using requests to follow GitHub Release redirects
+def download_weights(url, output_path):
+  headers = {"User-Agent": "Mozilla/5.0"}
+  response = requests.get(url, headers=headers, stream=True, allow_redirects=True)
+  response.raise_for_status()
+  with open(output_path, "wb") as f:
+    for chunk in response.iter_content(chunk_size=8192):
+      if chunk:
+        f.write(chunk)
+
+
+if not os.path.exists(WEIGHTS_FILE) or os.path.getsize(WEIGHTS_FILE) < 1000:
   with st.spinner("Downloading trained model weights... please wait"):
-    urllib.request.urlretrieve(WEIGHTS_URL, WEIGHTS_FILE)
+    download_weights(WEIGHTS_URL, WEIGHTS_FILE)
 
 
 @st.cache_resource
