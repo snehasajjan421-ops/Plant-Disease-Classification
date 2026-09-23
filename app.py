@@ -1,4 +1,6 @@
 import json
+import os
+import urllib.request
 from PIL import Image
 import streamlit as st
 import torch
@@ -10,15 +12,19 @@ st.set_page_config(
 )
 
 st.title("🌱 Plant Disease Classification System")
-st.write(
-    "Upload a leaf image to detect potential plant diseases in real-time."
-)
+st.write("Upload a leaf image to detect potential plant diseases in real-time.")
 
-# 1. Device configuration
 device = torch.device("cpu")
 
+WEIGHTS_FILE = "plant_disease_model.pth"
+WEIGHTS_URL = "https://github.com/snehasajjan421-ops/Plant-Disease-Classification/releases/download/v1.0/plant_disease_model.pth"
 
-# 2. Load classes and model
+# Auto-download the 45MB model weights if not already present
+if not os.path.exists(WEIGHTS_FILE):
+  with st.spinner("Downloading trained model weights... please wait"):
+    urllib.request.urlretrieve(WEIGHTS_URL, WEIGHTS_FILE)
+
+
 @st.cache_resource
 def load_model():
   with open("class_names.json", "r") as f:
@@ -27,9 +33,7 @@ def load_model():
   model = models.resnet18(weights=None)
   model.fc = nn.Linear(model.fc.in_features, len(class_names))
   model.load_state_dict(
-      torch.load(
-          "plant_disease_model.pth", map_location=device, weights_only=True
-      )
+      torch.load(WEIGHTS_FILE, map_location=device, weights_only=True)
   )
   model.to(device)
   model.eval()
@@ -40,13 +44,9 @@ try:
   model, class_names = load_model()
   model_ready = True
 except Exception as e:
-  st.warning(
-      "Model weights (`plant_disease_model.pth`) or `class_names.json` not found"
-      " in repository."
-  )
+  st.error(f"Error loading model: {e}")
   model_ready = False
 
-# 3. Transform
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -55,7 +55,6 @@ transform = transforms.Compose([
     ),
 ])
 
-# 4. Image upload
 uploaded_file = st.file_uploader(
     "Choose a leaf image...", type=["jpg", "jpeg", "png"]
 )
@@ -64,7 +63,6 @@ if uploaded_file is not None and model_ready:
   image = Image.open(uploaded_file).convert("RGB")
   st.image(image, caption="Uploaded Leaf", use_container_width=True)
 
-  # Preprocess & Predict
   tensor_img = transform(image).unsqueeze(0).to(device)
   with torch.no_grad():
     output = model(tensor_img)
